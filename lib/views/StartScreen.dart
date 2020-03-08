@@ -3,7 +3,6 @@ import 'package:device_info/device_info.dart';
 import 'package:bachelor_app/views/HomeScreen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:flutter/scheduler.dart';
 
 class StartScreen extends StatefulWidget {
   @override

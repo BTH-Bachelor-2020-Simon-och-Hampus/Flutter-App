@@ -6,7 +6,8 @@ import 'package:bachelor_app/views/HomeScreen.dart';
 
 class StopwatchPage extends StatefulWidget {
   final String activityName, deviceId;
-  StopwatchPage({Key key, @required this.activityName, this.deviceId}) : super(key: key);
+  final List<Map<String, dynamic>> activities;
+  StopwatchPage({Key key, @required this.activityName, this.deviceId, this.activities}) : super(key: key);
 
   @override
   _Stopwatch createState() => _Stopwatch();
@@ -24,6 +25,7 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
     super.initState();
   }
 
+  List<Map<String, dynamic>> activities = [];
   void addActivity() async {
     final response = await http.post("http://192.168.0.181:8529/_db/Bachelor/activities_crud/activities",
       headers: <String, String>{
@@ -35,11 +37,24 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
         'time': stopTimeToDisplay,
         'date': DateTime.now().toString(),
         'lat': "Hmm",
-        'long': "HMM"
+        'long': "HMM",
       })
     );
-    if(response.statusCode == 200){
-
+    if(response.statusCode == 201){
+      final response = await http.get("http://192.168.0.181:8529/_db/Bachelor/activities_crud/activities");
+      if(response.statusCode == 200){
+        activities = [];
+        var data = json.decode(response.body);
+        for(var i = 0; i < data.length; i++){
+          if(data[i]['user'] == widget.deviceId){
+            activities.add(data[i]);
+          }
+        }
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => Homepage(deviceId: widget.deviceId, activities: this.activities)),
+        );
+      }
     } else {
       print(response.body);
       //throw Exception('Failed to add activity');
@@ -97,10 +112,6 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
     stopTimeToDisplay = "00:00:00";
   }
 
-  void test(){
-    print("Ha");
-  }
-
   Widget stopwatch(){
     return Container(
       child: Column(
@@ -117,10 +128,6 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
                       RaisedButton(
                         onPressed: (){
                           this.addActivity();
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => Homepage(deviceId: widget.deviceId,)),
-                          );
                         },
                         color: Colors.green,
                         padding: EdgeInsets.symmetric(
@@ -139,7 +146,7 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
                         onPressed: (){
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => Homepage(deviceId: widget.deviceId,)),
+                            MaterialPageRoute(builder: (context) => Homepage(deviceId: widget.deviceId, activities: widget.activities)),
                           );
                         },
                         color: Colors.red,
@@ -218,7 +225,6 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
                   RaisedButton(
                       onPressed: (){
                         startIsPressed ? startStopwatch(): null;
-                        test();
                       },
                       color: Colors.green,
                       padding: EdgeInsets.symmetric(

@@ -5,7 +5,8 @@ import 'dart:convert';
 
 class Homepage extends StatefulWidget {
   final String deviceId;
-  Homepage({Key key, @required this.deviceId}) : super(key: key);
+  final List<Map<String, dynamic>> activities;
+  Homepage({Key key, @required this.deviceId, this.activities}) : super(key: key);
 
   @override
   _HomepageState createState() =>_HomepageState();
@@ -20,17 +21,22 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
       vsync: this,
     );
     super.initState();
+    if(widget.activities != null){
+      this.activities = widget.activities;
+    }
+    this.fetchActivities();
+    print(activities);
   }
 
+  List<Map<String, dynamic>> activities = [];
   void fetchActivities() async {
-    var userActivities = [{}];
-    int nrOfUserActivities = 0;
     final response = await http.get("http://192.168.0.181:8529/_db/Bachelor/activities_crud/activities");
     if(response.statusCode == 200){
+      activities = [];
       var data = json.decode(response.body);
       for(var i = 0; i < data.length; i++){
         if(data[i]['user'] == widget.deviceId){
-          print(data[i]['activity']);
+          activities.add(data[i]);
         }
       }
     }
@@ -92,7 +98,7 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                 if(activityInput != ""){
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => StopwatchPage(activityName: activityInput, deviceId: deviceId,)),
+                    MaterialPageRoute(builder: (context) => StopwatchPage(activityName: activityInput, deviceId: deviceId, activities: this.activities,)),
                   );
                 } else {
                   this._neverSatisfied();
@@ -117,9 +123,15 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
   }
 
   Widget allActivities(){
-    this.fetchActivities();
     return Container(
-
+      child: ListView.builder(
+        scrollDirection: Axis.vertical,
+        shrinkWrap: true,
+        itemCount: activities.length,
+        itemBuilder: (BuildContext ctxt, int index){
+          return new Text(activities[index]['activity']);
+        },
+      ),
     );
   }
 
