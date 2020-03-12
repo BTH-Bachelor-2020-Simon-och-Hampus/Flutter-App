@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:bachelor_app/views/HomeScreen.dart';
+import 'package:flutter/services.dart' show rootBundle;
+String db;
 
 class StopwatchPage extends StatefulWidget {
   final String activityName, deviceId;
@@ -14,6 +16,9 @@ class StopwatchPage extends StatefulWidget {
 }
 
 class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
+  Future<String> getDb() async {
+    return await rootBundle.loadString("dbIp.json");
+  }
 
   TabController tb;
   @override
@@ -27,38 +32,41 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
 
   List<Map<String, dynamic>> activities = [];
   void addActivity() async {
-    final response = await http.post("http://192.168.0.181:8529/_db/Bachelor/activities_crud/activities",
-      headers: <String, String>{
-        'Content-Type': 'application/json; charset=UTF-8',
-      },
-        body: jsonEncode(<String, String>{
-        'user': widget.deviceId,
-        'activity': widget.activityName,
-        'time': stopTimeToDisplay,
-        'date': DateTime.now().toString(),
-        'lat': "Hmm",
-        'long': "HMM",
-      })
-    );
-    if(response.statusCode == 201){
-      final response = await http.get("http://192.168.0.181:8529/_db/Bachelor/activities_crud/activities");
-      if(response.statusCode == 200){
-        activities = [];
-        var data = json.decode(response.body);
-        for(var i = 0; i < data.length; i++){
-          if(data[i]['user'] == widget.deviceId){
-            activities.add(data[i]);
-          }
-        }
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => Homepage(deviceId: widget.deviceId, activities: this.activities)),
+    getDb().then((data) async {
+      var ip = json.decode(data);
+        final response = await http.post("http://" + ip['ip'] + "/_db/Bachelor/activities_crud/activities",
+          headers: <String, String>{
+            'Content-Type': 'application/json; charset=UTF-8',
+          },
+            body: jsonEncode(<String, String>{
+            'user': widget.deviceId,
+            'activity': widget.activityName,
+            'time': stopTimeToDisplay,
+            'date': DateTime.now().toString(),
+            'lat': "Hmm",
+            'long': "HMM",
+          })
         );
-      }
-    } else {
-      print(response.body);
-      //throw Exception('Failed to add activity');
-    }
+        if(response.statusCode == 201){
+          final response = await http.get("http://" + ip['ip'] + "/_db/Bachelor/activities_crud/activities");
+          if(response.statusCode == 200){
+            activities = [];
+            var data = json.decode(response.body);
+            for(var i = 0; i < data.length; i++){
+              if(data[i]['user'] == widget.deviceId){
+                activities.add(data[i]);
+              }
+            }
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => Homepage(deviceId: widget.deviceId, activities: this.activities)),
+            );
+          }
+        } else {
+          print(response.body);
+          //throw Exception('Failed to add activity');
+        }
+    });
   }
 
   // STOPWATCH WIDGET

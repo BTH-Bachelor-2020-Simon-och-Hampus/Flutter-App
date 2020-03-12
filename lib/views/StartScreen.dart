@@ -3,13 +3,18 @@ import 'package:device_info/device_info.dart';
 import 'package:bachelor_app/views/HomeScreen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter/services.dart' show rootBundle;
+String db;
 
 class StartScreen extends StatefulWidget {
   @override
   _StartScreenState createState() =>_StartScreenState();
 }
-
 class _StartScreenState extends State<StartScreen> with TickerProviderStateMixin {
+  Future<String> getDb() async {
+    return await rootBundle.loadString("dbIp.json");
+  }
+
   @override
   void initState(){
     super.initState();
@@ -17,32 +22,35 @@ class _StartScreenState extends State<StartScreen> with TickerProviderStateMixin
   }
 
   void getDeviceId() async {
-    final response = await http.get("http://192.168.0.181:8529/_db/Bachelor/user_crud/users");
-    if(response.statusCode == 200) {
-      var data = json.decode(response.body);
-      _getId().then((id) {
-        for(var i = 0; i < data.length; i++){
-          if(data[i]['_key'] == id){
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => Homepage(deviceId: id)),
-              ModalRoute.withName("/"),
-            );
-          } else {
-            http.post("http://192.168.0.181:8529/_db/Bachelor/user_crud/users",
-              headers: <String, String>{
-                'Content-Type': 'application/json; charset=UTF-8',
-              },
-              body: jsonEncode(<String, String>{
-                '_key': id
-              }),
-            );
+    getDb().then((data) async {
+      var ip = json.decode(data);
+      final response = await http.get("http://" + ip['ip'] + "/_db/Bachelor/user_crud/users");
+      if(response.statusCode == 200) {
+        var data = json.decode(response.body);
+        _getId().then((id) {
+          for(var i = 0; i < data.length; i++){
+            if(data[i]['_key'] == id){
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => Homepage(deviceId: id)),
+                ModalRoute.withName("/"),
+              );
+            } else {
+              http.post("http://" + ip['ip'] + "/_db/Bachelor/user_crud/users",
+                headers: <String, String>{
+                  'Content-Type': 'application/json; charset=UTF-8',
+                },
+                body: jsonEncode(<String, String>{
+                  '_key': id
+                }),
+              );
+            }
           }
-        }
-      });
-    } else {
-      throw Exception('Failed to load device id');
-    }
+        });
+      } else {
+        throw Exception('Failed to load device id');
+      }
+    });
   }
 
   Future<String> _getId() async {

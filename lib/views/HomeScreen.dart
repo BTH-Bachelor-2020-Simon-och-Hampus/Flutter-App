@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:bachelor_app/views/StopwatchScreen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter/services.dart' show rootBundle;
+String db;
 
 class Homepage extends StatefulWidget {
   final String deviceId;
@@ -13,6 +15,10 @@ class Homepage extends StatefulWidget {
 }
 
 class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
+  Future<String> getDb() async {
+    return await rootBundle.loadString("dbIp.json");
+  }
+
   TabController tb;
   @override
   void initState(){
@@ -25,21 +31,25 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
       this.activities = widget.activities;
     }
     this.fetchActivities();
-    print(activities);
   }
 
   List<Map<String, dynamic>> activities = [];
   void fetchActivities() async {
-    final response = await http.get("http://192.168.0.181:8529/_db/Bachelor/activities_crud/activities");
-    if(response.statusCode == 200){
-      activities = [];
-      var data = json.decode(response.body);
-      for(var i = 0; i < data.length; i++){
-        if(data[i]['user'] == widget.deviceId){
-          activities.add(data[i]);
+    await getDb().then((data) async {
+      var ip = json.decode(data);
+      final response = await http.get(
+          "http://" + ip['ip'] + "/_db/Bachelor/activities_crud/activities");
+      if (response.statusCode == 200) {
+        activities = [];
+        var data = json.decode(response.body);
+        for (var i = 0; i < data.length; i++) {
+          if (data[i]['user'] == widget.deviceId) {
+            activities.add(data[i]);
+          }
         }
+        setState((){});
       }
-    }
+    });
   }
 
   Future<void> _neverSatisfied() async {
@@ -123,16 +133,16 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
   }
 
   Widget allActivities(){
-    return Container(
-      child: ListView.builder(
-        scrollDirection: Axis.vertical,
-        shrinkWrap: true,
-        itemCount: activities.length,
-        itemBuilder: (BuildContext ctxt, int index){
-          return new Text(activities[index]['activity']);
-        },
-      ),
-    );
+      return Container(
+        child: ListView.builder(
+          scrollDirection: Axis.vertical,
+          shrinkWrap: true,
+          itemCount: activities.length,
+          itemBuilder: (BuildContext ctxt, int index){
+            return new Text(activities[index]['activity']);
+          },
+        ),
+      );
   }
 
   @override
@@ -166,7 +176,7 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
       body: TabBarView(
         children: <Widget>[
           activity(),
-          allActivities(),
+          allActivities()
         ],
         controller: tb,
       ),
