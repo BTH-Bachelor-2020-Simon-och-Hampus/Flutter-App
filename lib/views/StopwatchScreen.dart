@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:bachelor_app/views/HomeScreen.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:geolocator/geolocator.dart';
 String db;
 
 class StopwatchPage extends StatefulWidget {
@@ -32,6 +33,7 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
 
   List<Map<String, dynamic>> activities = [];
   void addActivity() async {
+    Position position = await Geolocator().getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
     getDb().then((data) async {
       var ip = json.decode(data);
         final response = await http.post("http://" + ip['ip'] + "/_db/Bachelor/activities_crud/activities",
@@ -43,8 +45,8 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
             'activity': widget.activityName,
             'time': stopTimeToDisplay,
             'date': DateTime.now().toString(),
-            'lat': "Hmm",
-            'long': "HMM",
+            'lat': position.latitude.toString(),
+            'long': position.longitude.toString(),
           })
         );
         if(response.statusCode == 201){

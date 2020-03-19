@@ -90,15 +90,23 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
               Flexible(
-                child: TextField(
-                  decoration: InputDecoration(
-                    border: InputBorder.none,
-                    hintText: "Enter activity name",
-
+                  child: new Center(
+                    child: new Container(
+                      width: 325,
+                      child: new TextField(
+                        decoration: InputDecoration(
+                        border: new OutlineInputBorder(
+                        borderRadius: new BorderRadius.circular(25.0),
+                        borderSide: new BorderSide()
+                      ),
+                        fillColor: Colors.white,
+                        hintText: "Enter activity name",
+                      ),
+                        onChanged: (text){
+                        activityInput = text;
+                      },
+                    ),
                   ),
-                  onChanged: (text){
-                    activityInput = text;
-                  },
                 ),
               ),
             ],
@@ -114,7 +122,7 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                   this._neverSatisfied();
                 }
               },
-              color: Colors.blue,
+              color: Colors.green,
               padding: EdgeInsets.symmetric(
                 horizontal: 40.0,
                 vertical: 15.0,
@@ -132,17 +140,44 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
     );
   }
 
+  void removeActivity(key) async {
+    await getDb().then((data) async {
+      var ip = json.decode(data);
+      final response = await http.delete("http://" + ip['ip'] + "/_db/Bachelor/activities_crud/activities/" + key);
+      if (response.statusCode == 204) {
+        this.fetchActivities();
+      }
+    });
+  }
+
+  void showMap(lat, long){
+    print(long + " " + lat);
+  }
+
   Widget allActivities(){
-      return Container(
-        child: ListView.builder(
-          scrollDirection: Axis.vertical,
-          shrinkWrap: true,
-          itemCount: activities.length,
-          itemBuilder: (BuildContext ctxt, int index){
-            return new Text(activities[index]['activity']);
-          },
-        ),
-      );
+    return new ListView.builder(
+      scrollDirection: Axis.vertical,
+      shrinkWrap: true,
+      itemCount: activities.length,
+      itemBuilder: (context, index){
+        return new Card(
+          child: ListTile(
+            leading: IconButton(
+                icon: Icon(
+                    Icons.public, size: 30, color: Colors.greenAccent),
+                    onPressed: (){showMap(activities[index]['long'], activities[index]['lat']);},
+            ),
+            trailing: IconButton(
+                icon: Icon(
+                  Icons.remove_circle,size: 30, color: Colors.red),
+                  onPressed: (){removeActivity(activities[index]['_key']);}
+            ),
+            title: Text(activities[index]['activity']),
+            subtitle: Text(activities[index]['time']),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -157,7 +192,7 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
         bottom: TabBar(
           tabs: <Widget>[
             Text(
-              "Activity",
+              "New activity",
             ),
             Text(
               "All activities",
