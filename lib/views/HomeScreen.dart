@@ -114,9 +114,10 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
           RaisedButton(
               onPressed: (){
                 if(activityInput != ""){
-                  Navigator.push(
+                  Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(builder: (context) => StopwatchPage(activityName: activityInput, deviceId: deviceId, activities: this.activities,)),
+                    ModalRoute.withName("Homepage"),
                   );
                 } else {
                   this._neverSatisfied();

@@ -124,9 +124,9 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
 
   Widget stopwatch(){
     return Container(
-      child: Column(
+      child: new Column(
         children: <Widget>[
-          Expanded(
+          new Expanded(
             flex: 0,
             child: Container(
               child: Column(
@@ -178,7 +178,7 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
               ),
             ),
           ),
-          Expanded(
+          new Expanded(
             flex: 6,
             child: Container(
               alignment: Alignment.center,
@@ -191,10 +191,10 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
               ),
             ),
           ),
-          Expanded(
-            flex: 4,
-            child: Container(
-              child: Column(
+          new Expanded(
+            flex: 8,
+            child: new Container(
+                child: new Column(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: <Widget>[
                   Row(
@@ -238,8 +238,8 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
                       },
                       color: Colors.green,
                       padding: EdgeInsets.symmetric(
-                        horizontal: 80.0,
-                        vertical: 25.0,
+                        horizontal: 50.0,
+                        vertical: 15.0,
                       ),
                       child: Text(
                           "Start",

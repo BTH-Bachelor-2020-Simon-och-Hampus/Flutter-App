@@ -24,32 +24,32 @@ class _StartScreenState extends State<StartScreen> with TickerProviderStateMixin
   void getDeviceId() async {
     getDb().then((data) async {
       var ip = json.decode(data);
-      final response = await http.get("http://" + ip['ip'] + "/_db/Bachelor/user_crud/users");
-      if(response.statusCode == 200) {
-        var data = json.decode(response.body);
-        _getId().then((id) {
-          for(var i = 0; i < data.length; i++){
-            if(data[i]['_key'] == id){
+      _getId().then((id) async {
+        final response = await http.get("http://" + ip['ip'] + "/_db/Bachelor/user_crud/users/" + id);
+          if(response.statusCode == 200){
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => Homepage(deviceId: id)),
+              ModalRoute.withName("/"),
+            );
+          } else if(response.statusCode == 404){
+            final response = await http.post("http://" + ip['ip'] + "/_db/Bachelor/user_crud/users",
+              headers: <String, String>{
+                'Content-Type': 'application/json; charset=UTF-8',
+              },
+              body: jsonEncode(<String, String>{
+                '_key': id
+              }),
+            );
+            if(response.statusCode == 201){
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (context) => Homepage(deviceId: id)),
                 ModalRoute.withName("/"),
               );
-            } else {
-              http.post("http://" + ip['ip'] + "/_db/Bachelor/user_crud/users",
-                headers: <String, String>{
-                  'Content-Type': 'application/json; charset=UTF-8',
-                },
-                body: jsonEncode(<String, String>{
-                  '_key': id
-                }),
-              );
             }
           }
-        });
-      } else {
-        throw Exception('Failed to load device id');
-      }
+      });
     });
   }
 
