@@ -30,6 +30,8 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
     if(widget.activities != null){
       this.activities = widget.activities;
     }
+    //var baj = DateTime.parse("2020-03-26 14:56:18");
+    //print(DateTime.now().difference(baj));
     this.fetchActivities();
   }
 
@@ -82,61 +84,63 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
   Widget activity(){
     String deviceId = widget.deviceId;
     String activityInput = "";
-    return Container(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: <Widget>[
-              Flexible(
+    return new Scaffold(
+      body: new Container(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: <Widget>[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: <Widget>[
+                Flexible(
                   child: new Center(
                     child: new Container(
                       width: 325,
                       child: new TextField(
                         decoration: InputDecoration(
-                        border: new OutlineInputBorder(
-                        borderRadius: new BorderRadius.circular(25.0),
-                        borderSide: new BorderSide()
-                      ),
-                        fillColor: Colors.white,
-                        hintText: "Enter activity name",
-                      ),
+                          border: new OutlineInputBorder(
+                              borderRadius: new BorderRadius.circular(25.0),
+                              borderSide: new BorderSide()
+                          ),
+                          fillColor: Colors.white,
+                          hintText: "Enter activity name",
+                        ),
                         onChanged: (text){
-                        activityInput = text;
-                      },
+                          activityInput = text;
+                        },
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          RaisedButton(
-              onPressed: (){
-                if(activityInput != ""){
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (context) => StopwatchPage(activityName: activityInput, deviceId: deviceId, activities: this.activities,)),
-                    ModalRoute.withName("Homepage"),
-                  );
-                } else {
-                  this._neverSatisfied();
-                }
-              },
-              color: Colors.green,
-              padding: EdgeInsets.symmetric(
-                horizontal: 40.0,
-                vertical: 15.0,
-              ),
-              child: Text(
-                  "Add activity",
-                  style: TextStyle(
-                    fontSize: 20.0,
-                    color: Colors.white,
-                  )
-              )
-          ),
-        ],
+              ],
+            ),
+            RaisedButton(
+                onPressed: (){
+                  if(activityInput != ""){
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (context) => StopwatchPage(activityName: activityInput, deviceId: deviceId, activities: this.activities,)),
+                      ModalRoute.withName("Homepage"),
+                    );
+                  } else {
+                    this._neverSatisfied();
+                  }
+                },
+                color: Colors.green,
+                padding: EdgeInsets.symmetric(
+                  horizontal: 40.0,
+                  vertical: 15.0,
+                ),
+                child: Text(
+                    "Add activity",
+                    style: TextStyle(
+                      fontSize: 20.0,
+                      color: Colors.white,
+                    )
+                )
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -156,34 +160,36 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
   }
 
   Widget allActivities(){
-    return new ListView.builder(
-      scrollDirection: Axis.vertical,
-      shrinkWrap: true,
-      itemCount: activities.length,
-      itemBuilder: (context, index){
-        return new Card(
-          child: ListTile(
-            leading: IconButton(
+    return new Scaffold(
+      body: new ListView.builder(
+        scrollDirection: Axis.vertical,
+        shrinkWrap: true,
+        itemCount: activities.length,
+        itemBuilder: (context, index){
+          return new Card(
+            child: ListTile(
+              leading: IconButton(
                 icon: Icon(
                     Icons.public, size: 30, color: Colors.greenAccent),
-                    onPressed: (){showMap(activities[index]['long'], activities[index]['lat']);},
-            ),
-            trailing: IconButton(
-                icon: Icon(
-                  Icons.remove_circle,size: 30, color: Colors.red),
+                onPressed: (){showMap(activities[index]['long'], activities[index]['lat']);},
+              ),
+              trailing: IconButton(
+                  icon: Icon(
+                      Icons.remove_circle,size: 30, color: Colors.red),
                   onPressed: (){removeActivity(activities[index]['_key']);}
+              ),
+              title: Text(activities[index]['activity']),
+              subtitle: Text(activities[index]['time']),
             ),
-            title: Text(activities[index]['activity']),
-            subtitle: Text(activities[index]['time']),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return new Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: Text(

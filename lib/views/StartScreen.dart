@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:device_info/device_info.dart';
 import 'package:bachelor_app/views/HomeScreen.dart';
+import 'package:bachelor_app/views/StopwatchScreen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
@@ -27,11 +28,37 @@ class _StartScreenState extends State<StartScreen> with TickerProviderStateMixin
       _getId().then((id) async {
         final response = await http.get("http://" + ip['ip'] + "/_db/Bachelor/user_crud/users/" + id);
           if(response.statusCode == 200){
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => Homepage(deviceId: id)),
-              ModalRoute.withName("/"),
-            );
+            final response = await http.get("http://" + ip['ip'] + "/_db/Bachelor/activities_crud/activities");
+            if(response.statusCode == 200){
+              var data = json.decode(response.body);
+              bool status = false;
+              String activityName = "";
+              String key = "";
+              String time = "";
+              for(var i = 0; i < data.length; i++){
+                if(data[i]['user'] == id){
+                  if(data[i]['status'] == "started" || data[i]['status'] == "stopped") {
+                    status = true;
+                    activityName = data[i]['activity'];
+                    key = data[i]['_key'];
+                    time = data[i]['time'];
+                  }
+                }
+              }
+              if(status == true){
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => StopwatchPage(activityName: activityName, deviceId: id, activityKey: key, activityTime: time)),
+                  ModalRoute.withName("/"),
+                );
+              } else {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => Homepage(deviceId: id)),
+                  ModalRoute.withName("/"),
+                );
+              }
+            }
           } else if(response.statusCode == 404){
             final response = await http.post("http://" + ip['ip'] + "/_db/Bachelor/user_crud/users",
               headers: <String, String>{
