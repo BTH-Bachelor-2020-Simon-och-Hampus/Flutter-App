@@ -12,6 +12,8 @@ bool startIsPressed = true;
 bool stopIsPressed = true;
 bool resetIsPressed = true;
 String stopTimeToDisplay = "00:00:00";
+String currentTime = "00:00:00";
+String currentKey = "";
 var swatch = Stopwatch();
 final dur = const Duration(seconds: 1);
 
@@ -23,9 +25,8 @@ final dur = const Duration(seconds: 1);
 //}
 
 class StopwatchPage extends StatefulWidget {
-  final String activityName, deviceId, activityKey, activityTime;
-  final List<Map<String, dynamic>> activities;
-  StopwatchPage({Key key, @required this.activityName, this.deviceId, this.activities, this.activityKey, this.activityTime}) : super(key: key);
+  final String activityName, deviceId, activityKey, activityTime, activityStatus, activityDate;
+  StopwatchPage({Key key, @required this.activityName, this.deviceId, this.activityKey, this.activityTime, this.activityStatus, this.activityDate}) : super(key: key);
 
   @override
   _Stopwatch createState() => _Stopwatch();
@@ -45,7 +46,12 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
     );
     if(widget.activityTime != null){
       stopTimeToDisplay = widget.activityTime;
-
+      currentTime = widget.activityTime;
+      currentKey = widget.activityKey;
+      if(widget.activityStatus == "started"){
+        currentTime = "0" + ((DateTime.now().difference(DateTime.parse(widget.activityDate))).toString()).substring(0,7);
+        this.startStopwatch();
+      }
     }
 //    if(WidgetsBinding.instance == null)
 //      WidgetsFlutterBinding();
@@ -56,11 +62,10 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
     super.initState();
   }
 
-  List<Map<String, dynamic>> activities = [];
   void addActivity(status) async {
     getDb().then((data) async {
       var ip = json.decode(data);
-      if(widget.activityKey == null) {
+      if(widget.activityKey == null && currentKey == "") {
         Position position = await Geolocator().getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
         final response = await http.post("http://" + ip['ip'] + "/_db/Bachelor/activities_crud/activities",
             headers: <String, String>{
@@ -76,24 +81,15 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
               'status': status
             })
         );
-        if(response.statusCode == 201 && status == "finished"){
-          final response = await http.get("http://" + ip['ip'] + "/_db/Bachelor/activities_crud/activities");
-          if(response.statusCode == 200){
-            activities = [];
-            var data = json.decode(response.body);
-            for(var i = 0; i < data.length; i++){
-              if(data[i]['user'] == widget.deviceId){
-                activities.add(data[i]);
-              }
-            }
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => Homepage(deviceId: widget.deviceId, activities: this.activities)),
-            );
-          }
-        }
+        currentKey = json.decode(response.body)['_key'];
       } else {
         this.updateActivity(status);
+      }
+      if(status == "finished"){
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => Homepage(deviceId: widget.deviceId)),
+        );
       }
     });
   }
@@ -101,18 +97,49 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
   void updateActivity(status) async {
     getDb().then((data) async {
       var ip = json.decode(data);
-      final response = await http.patch("http://" + ip['ip'] + "/_db/Bachelor/activities_crud/activities/" + widget.activityKey,
-          headers: <String, String>{
-            'Content-Type': 'application/json; charset=UTF-8',
-          },
-          body: jsonEncode(<String, String>{
-            'status': status,
-            'time': stopTimeToDisplay
-          })
-      );
-      if(response.statusCode != 201){
-        print("Error updating activity");
+      if(status != "reset"){
+        final response = await http.patch("http://" + ip['ip'] + "/_db/Bachelor/activities_crud/activities/" + currentKey,
+            headers: <String, String>{
+              'Content-Type': 'application/json; charset=UTF-8',
+            },
+            body: jsonEncode(<String, String>{
+              'status': status,
+              'time': stopTimeToDisplay
+            })
+        );
+        if(response.statusCode != 200){
+          print("Error updating activity");
+        }
+      } else {
+        final response = await http.patch("http://" + ip['ip'] + "/_db/Bachelor/activities_crud/activities/" + currentKey,
+            headers: <String, String>{
+              'Content-Type': 'application/json; charset=UTF-8',
+            },
+            body: jsonEncode(<String, String>{
+              'status': "stopped",
+              'time': "00:00:00"
+            })
+        );
+        currentTime = "00:00:00";
+        if(response.statusCode != 200){
+          print("Error updating activity");
+        }
       }
+    });
+  }
+
+  void removeActivity() async {
+    getDb().then((data) async {
+      var ip = json.decode(data);
+      final response = await http.delete("http://" + ip['ip'] + "/_db/Bachelor/activities_crud/activities/" + currentKey);
+        if(response.statusCode != 204){
+          print("Error deleting activity");
+        } else {
+          stopTimeToDisplay = "00:00:00";
+          currentTime = "00:00:00";
+          currentKey = "";
+          swatch.reset();
+        }
     });
   }
 
@@ -125,11 +152,19 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
     if(swatch.isRunning){
       startTimer();
     }
-    setState(() {
-      stopTimeToDisplay = swatch.elapsed.inHours.toString().padLeft(2, "0") + ":"
-          + (swatch.elapsed.inMinutes%60).toString().padLeft(2, "0") + ":"
-          + (swatch.elapsed.inSeconds%60).toString().padLeft(2, "0");
-    });
+    if(widget.activityTime != null){
+      setState(() {
+        stopTimeToDisplay = (swatch.elapsed.inHours+int.parse(currentTime.substring(0,2))).toString().padLeft(2, "0") + ":"
+            + ((swatch.elapsed.inMinutes%60)+int.parse(currentTime.substring(3,5))).toString().padLeft(2, "0") + ":"
+            + ((swatch.elapsed.inSeconds%60)+int.parse(currentTime.substring(6,8))).toString().padLeft(2, "0");
+      });
+    } else {
+      setState(() {
+        stopTimeToDisplay = (swatch.elapsed.inHours).toString().padLeft(2, "0") + ":"
+            + ((swatch.elapsed.inMinutes%60)).toString().padLeft(2, "0") + ":"
+            + ((swatch.elapsed.inSeconds%60)).toString().padLeft(2, "0");
+      });
+    }
   }
 
   void startStopwatch(){
@@ -176,7 +211,7 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
                       children: <Widget>[
                         RaisedButton(
                           onPressed: (){
-                            this.addActivity("finised");
+                            this.addActivity("finished");
                           },
                           color: Colors.green,
                           padding: EdgeInsets.symmetric(
@@ -194,9 +229,10 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
                         RaisedButton(
                           onPressed: (){
                             Workmanager.cancelAll();
+                            this.removeActivity();
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => Homepage(deviceId: widget.deviceId, activities: widget.activities)),
+                              MaterialPageRoute(builder: (context) => Homepage(deviceId: widget.deviceId)),
                             );
                           },
                           color: Colors.red,
@@ -259,7 +295,10 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
                           ),
                         ),
                         RaisedButton(
-                            onPressed: resetIsPressed ? null : resetStopwatch,
+                            onPressed: (){
+                              resetIsPressed ? null : resetStopwatch();
+                              this.updateActivity("reset");
+                            },
                             color: Colors.teal,
                             padding: EdgeInsets.symmetric(
                               horizontal: 40.0,

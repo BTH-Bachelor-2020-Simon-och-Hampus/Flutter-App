@@ -7,8 +7,7 @@ String db;
 
 class Homepage extends StatefulWidget {
   final String deviceId;
-  final List<Map<String, dynamic>> activities;
-  Homepage({Key key, @required this.deviceId, this.activities}) : super(key: key);
+  Homepage({Key key, @required this.deviceId}) : super(key: key);
 
   @override
   _HomepageState createState() =>_HomepageState();
@@ -27,11 +26,6 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
       vsync: this,
     );
     super.initState();
-    if(widget.activities != null){
-      this.activities = widget.activities;
-    }
-    //var baj = DateTime.parse("2020-03-26 14:56:18");
-    //print(DateTime.now().difference(baj));
     this.fetchActivities();
   }
 
@@ -119,7 +113,7 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                   if(activityInput != ""){
                     Navigator.pushAndRemoveUntil(
                       context,
-                      MaterialPageRoute(builder: (context) => StopwatchPage(activityName: activityInput, deviceId: deviceId, activities: this.activities,)),
+                      MaterialPageRoute(builder: (context) => StopwatchPage(activityName: activityInput, deviceId: deviceId)),
                       ModalRoute.withName("Homepage"),
                     );
                   } else {

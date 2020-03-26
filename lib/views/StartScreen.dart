@@ -35,6 +35,8 @@ class _StartScreenState extends State<StartScreen> with TickerProviderStateMixin
               String activityName = "";
               String key = "";
               String time = "";
+              String activityStatus = "";
+              String date = "";
               for(var i = 0; i < data.length; i++){
                 if(data[i]['user'] == id){
                   if(data[i]['status'] == "started" || data[i]['status'] == "stopped") {
@@ -42,20 +44,22 @@ class _StartScreenState extends State<StartScreen> with TickerProviderStateMixin
                     activityName = data[i]['activity'];
                     key = data[i]['_key'];
                     time = data[i]['time'];
+                    activityStatus = data[i]['status'];
+                    date = data[i]['date'];
                   }
                 }
               }
               if(status == true){
                 Navigator.pushAndRemoveUntil(
                   context,
-                  MaterialPageRoute(builder: (context) => StopwatchPage(activityName: activityName, deviceId: id, activityKey: key, activityTime: time)),
-                  ModalRoute.withName("/"),
+                  MaterialPageRoute(builder: (context) => StopwatchPage(activityName: activityName, deviceId: id, activityKey: key, activityTime: time, activityStatus: activityStatus, activityDate: date)),
+                  ModalRoute.withName("StartScreen"),
                 );
               } else {
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (context) => Homepage(deviceId: id)),
-                  ModalRoute.withName("/"),
+                  ModalRoute.withName("StartScreen"),
                 );
               }
             }
