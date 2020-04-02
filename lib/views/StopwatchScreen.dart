@@ -6,6 +6,8 @@ import 'package:bachelor_app/views/HomeScreen.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:geolocator/geolocator.dart';
 import 'package:workmanager/workmanager.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
 String db;
 String activityKey;
 bool startIsPressed = true;
@@ -19,8 +21,8 @@ final dur = const Duration(seconds: 1);
 
 //void callbackDispatcher() {
 //  Workmanager.executeTask((task, inputData) {
-//    print("Notice activated");
-//    return null;
+//    print("Background called yo");
+//    return Future.value(true);
 //  });
 //}
 
@@ -82,10 +84,13 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
             })
         );
         currentKey = json.decode(response.body)['_key'];
-      } else {
+      } else if(status != "finished") {
         this.updateActivity(status);
       }
       if(status == "finished"){
+        this.resetStopwatch();
+        currentKey = "";
+        Workmanager.cancelAll();
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => Homepage(deviceId: widget.deviceId)),
@@ -97,7 +102,7 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
   void updateActivity(status) async {
     getDb().then((data) async {
       var ip = json.decode(data);
-      if(status != "reset"){
+      if(status != "reset" && status != "finished"){
         final response = await http.patch("http://" + ip['ip'] + "/_db/Bachelor/activities_crud/activities/" + currentKey,
             headers: <String, String>{
               'Content-Type': 'application/json; charset=UTF-8',
@@ -110,7 +115,7 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
         if(response.statusCode != 200){
           print("Error updating activity");
         }
-      } else {
+      } else if(status == "reset"){
         final response = await http.patch("http://" + ip['ip'] + "/_db/Bachelor/activities_crud/activities/" + currentKey,
             headers: <String, String>{
               'Content-Type': 'application/json; charset=UTF-8',
@@ -124,6 +129,19 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
         if(response.statusCode != 200){
           print("Error updating activity");
         }
+      } else if(status == "finished"){
+        final response = await http.patch("http://" + ip['ip'] + "/_db/Bachelor/activities_crud/activities/" + currentKey,
+            headers: <String, String>{
+              'Content-Type': 'application/json; charset=UTF-8',
+            },
+            body: jsonEncode(<String, String>{
+              'status': status,
+              'time': stopTimeToDisplay
+            })
+        );
+        if(response.statusCode == 200){
+          this.addActivity("finished");
+        }
       }
     });
   }
@@ -131,14 +149,17 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
   void removeActivity() async {
     getDb().then((data) async {
       var ip = json.decode(data);
+      print(currentKey);
       final response = await http.delete("http://" + ip['ip'] + "/_db/Bachelor/activities_crud/activities/" + currentKey);
         if(response.statusCode != 204){
           print("Error deleting activity");
         } else {
-          stopTimeToDisplay = "00:00:00";
-          currentTime = "00:00:00";
+          this.resetStopwatch();
           currentKey = "";
-          swatch.reset();
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => Homepage(deviceId: widget.deviceId)),
+          );
         }
     });
   }
@@ -193,6 +214,7 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
     });
     swatch.reset();
     stopTimeToDisplay = "00:00:00";
+    currentTime = "00:00:00";
   }
 
   Widget stopwatch(){
@@ -211,7 +233,9 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
                       children: <Widget>[
                         RaisedButton(
                           onPressed: (){
-                            this.addActivity("finished");
+                            Workmanager.cancelAll();
+                            this.stopStopwatch();
+                            this.updateActivity("finished");
                           },
                           color: Colors.green,
                           padding: EdgeInsets.symmetric(
@@ -229,11 +253,8 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
                         RaisedButton(
                           onPressed: (){
                             Workmanager.cancelAll();
+                            this.stopStopwatch();
                             this.removeActivity();
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => Homepage(deviceId: widget.deviceId)),
-                            );
                           },
                           color: Colors.red,
                           padding: EdgeInsets.symmetric(
