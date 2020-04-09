@@ -6,7 +6,6 @@ import 'package:bachelor_app/views/HomeScreen.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:geolocator/geolocator.dart';
 import 'package:workmanager/workmanager.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 String db;
 String activityKey;
@@ -15,16 +14,17 @@ bool stopIsPressed = true;
 bool resetIsPressed = true;
 String stopTimeToDisplay = "00:00:00";
 String currentTime = "00:00:00";
+int currentTimeMinutes = 0, currentTimeHours = 0;
 String currentKey = "";
 var swatch = Stopwatch();
 final dur = const Duration(seconds: 1);
 
-//void callbackDispatcher() {
-//  Workmanager.executeTask((task, inputData) {
-//    print("Background called yo");
-//    return Future.value(true);
-//  });
-//}
+void callbackDispatcher() {
+  Workmanager.executeTask((task, inputData) {
+    print("Background called yo");
+    return Future.value(true);
+  });
+}
 
 class StopwatchPage extends StatefulWidget {
   final String activityName, deviceId, activityKey, activityTime, activityStatus, activityDate;
@@ -52,15 +52,17 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
       currentKey = widget.activityKey;
       if(widget.activityStatus == "started"){
         currentTime = "0" + ((DateTime.now().difference(DateTime.parse(widget.activityDate))).toString()).substring(0,7);
+        currentTimeMinutes = int.parse(currentTime.substring(3,5));
+        currentTimeHours = int.parse(currentTime.substring(0,2));
         this.startStopwatch();
       }
     }
-//    if(WidgetsBinding.instance == null)
-//      WidgetsFlutterBinding();
-//    Workmanager.initialize(
-//        callbackDispatcher, // The top level function, aka callbackDispatcher
-//        isInDebugMode: true // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
-//    );
+    if(WidgetsBinding.instance == null)
+      WidgetsFlutterBinding();
+    Workmanager.initialize(
+        callbackDispatcher, // The top level function, aka callbackDispatcher
+        isInDebugMode: true // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
+    );
     super.initState();
   }
 
@@ -174,10 +176,17 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
       startTimer();
     }
     if(widget.activityTime != null){
+      if(swatch.elapsed.inSeconds+int.parse(currentTime.substring(6,8)) == 60){
+        print("Hello");
+        currentTimeMinutes++;
+      }
+      if(currentTimeMinutes == 60){
+        currentTimeHours++;
+      }
       setState(() {
-        stopTimeToDisplay = (swatch.elapsed.inHours+int.parse(currentTime.substring(0,2))).toString().padLeft(2, "0") + ":"
-            + ((swatch.elapsed.inMinutes%60)+int.parse(currentTime.substring(3,5))).toString().padLeft(2, "0") + ":"
-            + ((swatch.elapsed.inSeconds%60)+int.parse(currentTime.substring(6,8))).toString().padLeft(2, "0");
+        stopTimeToDisplay = (currentTimeHours).toString().padLeft(2, "0") + ":"
+            + (currentTimeMinutes).toString().padLeft(2, "0") + ":"
+            + ((swatch.elapsed.inSeconds+int.parse(currentTime.substring(6,8)))%60).toString().padLeft(2, "0");
       });
     } else {
       setState(() {
@@ -339,12 +348,11 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
                         onPressed: (){
                           this.addActivity("started");
                           startIsPressed ? startStopwatch() : null;
-//                          Workmanager.registerPeriodicTask(
-//                            "1",
-//                            "Duration",
-//                            initialDelay: Duration(seconds: 10),
-//                            frequency: Duration(minutes: 15),
-//                          );
+                          Workmanager.registerPeriodicTask(
+                            "1",
+                            "Duration",
+                            frequency: Duration(minutes: 15),
+                          );
                         },
                         color: Colors.green,
                         padding: EdgeInsets.symmetric(
