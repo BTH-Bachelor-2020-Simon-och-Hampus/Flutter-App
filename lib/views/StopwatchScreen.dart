@@ -177,7 +177,6 @@ class _Stopwatch extends State<StopwatchPage> with TickerProviderStateMixin {
     }
     if(widget.activityTime != null){
       if(swatch.elapsed.inSeconds+int.parse(currentTime.substring(6,8)) == 60){
-        print("Hello");
         currentTimeMinutes++;
       }
       if(currentTimeMinutes == 60){
